@@ -1,6 +1,20 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { CohereClientV2 } = require('cohere-ai');
+const express = require('express'); // Servidor web requerido por Render
 
+// 1. Configuración del servidor Express para cumplir con Render
+const app = express();
+const PORT = process.env.PORT || 10000; // Render usa el puerto 10000 por defecto
+
+app.get('/', (req, res) => {
+    res.send('OK'); // Responder "OK" a las visitas de Render y UptimeRobot
+});
+
+app.listen(PORT, () => {
+    console.log(`Servidor web escuchando en el puerto ${PORT}`);
+});
+
+// 2. Configuración normal del Bot de Discord
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
