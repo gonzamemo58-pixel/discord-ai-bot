@@ -1,4 +1,4 @@
-require('dotenv').config(); // 👈 ESTA ES LA LÍNEA QUE FALTABA
+require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const { CohereClientV2 } = require('cohere-ai');
 const express = require('express');
@@ -46,16 +46,26 @@ client.on('messageCreate', async (message) => {
                 ]
             });
 
+            // LECTURA CORREGIDA Y SEGURA PARA LA VERSIÓN LATEST DE COHERE
+            let respuestaIA = '';
             if (response.message && response.message.content) {
-                const respuestaIA = response.message.content.text;
-                
+                if (Array.isArray(response.message.content)) {
+                    respuestaIA = response.message.content[0].text;
+                } else if (response.message.content.text) {
+                    respuestaIA = response.message.content.text;
+                } else {
+                    respuestaIA = response.message.content;
+                }
+            }
+
+            if (respuestaIA && respuestaIA.length > 0) {
                 if (respuestaIA.length > 2000) {
                     await message.reply(respuestaIA.substring(0, 1999));
                 } else {
                     await message.reply(respuestaIA);
                 }
             } else {
-                await message.reply('❌ No pude generar texto en este momento.');
+                await message.reply('❌ Cohere respondió, pero el formato de texto no es válido.');
             }
 
         } catch (error) {
@@ -66,4 +76,3 @@ client.on('messageCreate', async (message) => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
-
