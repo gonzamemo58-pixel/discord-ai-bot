@@ -7,7 +7,9 @@
   },
   "dependencies": {
     "cohere-ai": "latest",
-    "discord.js": "latest"
+    "discord.js": "latest",
+    "express": "latest"
   }
 }
+
 
