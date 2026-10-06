@@ -27,11 +27,13 @@ const cohere = new CohereClientV2({ token: process.env.COHERE_API_KEY });
 // 1554571667169214525
 const CANAL_IA_ID = '1554571667169214525'; 
 
-// Objeto para almacenar el historial de cada usuario en la memoria del servidor
+const INSTRUCCION_SISTEMA = 'Eres un asistente de Discord muy amigable, divertido y respondes con emojis. Recuerdas el contexto de la conversación.';
+
+// Objeto para almacenar el historial de cada usuario
 const historialConversaciones = new Map();
 
 client.once('ready', () => {
-    console.log(`🤖 ¡Bot con memoria conectado con éxito como ${client.user.tag}!`);
+    console.log(`🤖 ¡Bot con memoria corregida conectado con éxito como ${client.user.tag}!`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -42,30 +44,32 @@ client.on('messageCreate', async (message) => {
 
         const usuarioId = message.author.id;
 
-        // Si el usuario no tiene historial, se lo creamos con la instrucción del sistema
+        // Si el usuario no tiene historial, se lo creamos inicializado
         if (!historialConversaciones.has(usuarioId)) {
-            historialConversaciones.set(usuarioId, [
-                { role: 'system', content: 'Eres un asistente de Discord muy amigable, divertido y respondes con emojis. Recuerdas el contexto de la conversación.' }
-            ]);
+            historialConversaciones.set(usuarioId, []);
         }
 
-        // Obtenemos el historial actual del usuario
         let historial = historialConversaciones.get(usuarioId);
 
         // Agregamos el nuevo mensaje del usuario al historial
         historial.push({ role: 'user', content: message.content });
 
+        // Estructuramos los mensajes finales incluyendo SIEMPRE el rol del sistema al inicio
+        const mensajesParaIA = [
+            { role: 'system', content: INSTRUCCION_SISTEMA },
+            ...historial
+        ];
+
         try {
-            // Le pasamos TODO el historial guardado a Cohere en lugar de solo un mensaje
             const response = await cohere.chat({
                 model: 'command-r-plus-08-2024',
-                messages: historial
+                messages: mensajesParaIA
             });
 
             let respuestaIA = '';
             if (response.message && response.message.content) {
                 if (Array.isArray(response.message.content)) {
-                    respuestaIA = response.message.content.text;
+                    respuestaIA = response.message.content[0].text || response.message.content;
                 } else if (response.message.content.text) {
                     respuestaIA = response.message.content.text;
                 } else {
@@ -74,13 +78,12 @@ client.on('messageCreate', async (message) => {
             }
 
             if (respuestaIA && respuestaIA.length > 0) {
-                // Guardamos la respuesta de la IA en el historial para que la recuerde en la próxima pregunta
+                // Guardamos la respuesta de la IA en el historial del usuario
                 historial.push({ role: 'assistant', content: respuestaIA });
 
-                // Limitar el historial a los últimos 10 mensajes para no gastar la cuota gratis
-                if (historial.length > 11) {
-                    // Mantenemos el mensaje de sistema del inicio [0] y cortamos los más viejos
-                    historial = [historial[0], ...historial.slice(-10)];
+                // Mantener el historial corto (últimos 10 mensajes) de forma limpia
+                if (historial.length > 10) {
+                    historial = historial.slice(-10);
                     historialConversaciones.set(usuarioId, historial);
                 }
 
@@ -90,7 +93,7 @@ client.on('messageCreate', async (message) => {
                     await message.reply(respuestaIA);
                 }
             } else {
-                await message.reply('❌ Cohere respondió, pero el formato de texto no es válido.');
+                await message.reply('❌ No pude extraer el texto de la respuesta de la IA.');
             }
 
         } catch (error) {
