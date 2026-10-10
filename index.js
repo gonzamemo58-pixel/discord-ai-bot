@@ -1,4 +1,4 @@
-require('dotenv').config();
+onfig();
 const { Client, GatewayIntentBits } = require('discord.js');
 const { CohereClientV2 } = require('cohere-ai');
 const express = require('express');
@@ -86,17 +86,12 @@ client.on('messageCreate', async (message) => {
                     await message.reply(respuestaIA.substring(0, 1999));
                 } else {
                     await message.reply(respuestaIA);
-                }
+                }(error) {
+            console.error('Error con Cohere:', error);
+            await message.reply('❌ Hubo un problema al procesar tu respuesta con la nueva IA.');
+        }
             } else {
                 await message.reply('❌ No pude extraer el texto de la respuesta de la IA.');
             }
 
-        } catch (error) {
-            console.error('Error con Cohere:', error);
-            await message.reply('❌ Hubo un problema al procesar tu respuesta con la nueva IA.');
-        }
-    }
-});
-
-client.login(process.env.DISCORD_TOKEN);
-    
+        } catch 
