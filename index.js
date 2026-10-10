@@ -29,11 +29,10 @@ const CANAL_IA_ID = '1554571667169214525';
 
 const INSTRUCCION_SISTEMA = 'Eres un asistente de Discord muy amigable, divertido y respondes con emojis. Recuerdas el contexto de la conversación.';
 
-// Objeto para almacenar el historial de cada usuario
 const historialConversaciones = new Map();
 
 client.once('ready', () => {
-    console.log(`🤖 ¡Bot con memoria corregida conectado con éxito como ${client.user.tag}!`);
+    console.log(`🤖 ¡Bot con memoria blindada conectado como ${client.user.tag}!`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -44,17 +43,14 @@ client.on('messageCreate', async (message) => {
 
         const usuarioId = message.author.id;
 
-        // Si el usuario no tiene historial, se lo creamos inicializado
         if (!historialConversaciones.has(usuarioId)) {
             historialConversaciones.set(usuarioId, []);
         }
 
         let historial = historialConversaciones.get(usuarioId);
 
-        // Agregamos el nuevo mensaje del usuario al historial
         historial.push({ role: 'user', content: message.content });
 
-        // Estructuramos los mensajes finales incluyendo SIEMPRE el rol del sistema al inicio
         const mensajesParaIA = [
             { role: 'system', content: INSTRUCCION_SISTEMA },
             ...historial
@@ -66,10 +62,11 @@ client.on('messageCreate', async (message) => {
                 messages: mensajesParaIA
             });
 
+            // EXTRACCIÓN BLINDADA PARA LA ÚLTIMA VERSIÓN DE COHERE
             let respuestaIA = '';
             if (response.message && response.message.content) {
                 if (Array.isArray(response.message.content)) {
-                    respuestaIA = response.message.content[0].text || response.message.content;
+                    respuestaIA = response.message.content[0]?.text || response.message.content[0] || '';
                 } else if (response.message.content.text) {
                     respuestaIA = response.message.content.text;
                 } else {
@@ -78,10 +75,8 @@ client.on('messageCreate', async (message) => {
             }
 
             if (respuestaIA && respuestaIA.length > 0) {
-                // Guardamos la respuesta de la IA en el historial del usuario
                 historial.push({ role: 'assistant', content: respuestaIA });
 
-                // Mantener el historial corto (últimos 10 mensajes) de forma limpia
                 if (historial.length > 10) {
                     historial = historial.slice(-10);
                     historialConversaciones.set(usuarioId, historial);
@@ -104,3 +99,4 @@ client.on('messageCreate', async (message) => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+    
